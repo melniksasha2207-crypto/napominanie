@@ -5,7 +5,11 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
-export default async function handler(req, res) {
+export default function handler(req, res) {
+    res.json({
+        env: process.env.DATABASE_URL ? "OK" : "MISSING"
+    });
+}
 
     // GET — получить все
     if (req.method === "GET") {
