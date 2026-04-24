@@ -1,29 +1,41 @@
-let reminders = [];
+import { Pool } from "pg";
 
-export default function handler(req, res) {
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+});
 
-    // 📥 получить все напоминания
+export default async function handler(req, res) {
+
+    // GET — получить все
     if (req.method === "GET") {
-        return res.json(reminders);
+        const result = await pool.query(
+            "SELECT * FROM reminders ORDER BY id DESC"
+        );
+        return res.json(result.rows);
     }
 
-    // ➕ добавить напоминание
+    // POST — добавить
     if (req.method === "POST") {
-        const newReminder = {
-            id: Date.now(),
-            text: req.body.text,
-            time: req.body.time
-        };
+        const { text, time } = req.body;
 
-        reminders.push(newReminder);
-        return res.json(newReminder);
+        const result = await pool.query(
+            "INSERT INTO reminders (text, time) VALUES ($1, $2) RETURNING *",
+            [text, time]
+        );
+
+        return res.json(result.rows[0]);
     }
 
-    // ❌ удалить напоминание
+    // DELETE — удалить
     if (req.method === "DELETE") {
         const { id } = req.body;
 
-        reminders = reminders.filter(r => r.id != id);
+        await pool.query(
+            "DELETE FROM reminders WHERE id = $1",
+            [id]
+        );
+
         return res.json({ ok: true });
     }
 
